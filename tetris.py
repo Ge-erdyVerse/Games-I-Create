@@ -17,11 +17,29 @@ grid=[[None for _ in range(COLS)] for _ in range(ROWS)]
 score=0
 font=pygame.font.Font(None,36)
 game_over=False
+last_rotation_time=pygame.time.get_ticks()
+def rotate_grid():
+    global grid
+    grid=[list(row) for row in zip(*grid[::-1])]
+    apply_gravity()
+def apply_gravity():
+    global grid
+    for col in range(COLS):
+        empty_rows=[]
+        for row in range(ROWS-1,-1,-1):
+            if grid[row][col] is None:
+                empty_rows.append(row)
+            elif empty_rows:
+                new_row=empty_rows.pop(0)
+                grid[new_row][col]=grid[row][col]
+                grid[row][col]=None
+                empty_rows.append(row)
 def reset_game():
-    global grid,score,game_over,tetromino
+    global grid,score,game_over,tetromino,last_rotation_time
     grid=[[None for _ in range(COLS)] for _ in range(ROWS)]
     score=0
     game_over=False
+    last_rotation_time=pygame.time.get_ticks()
     tetromino=Tetromino()
 class Tetromino:
     def __init__(self):
@@ -104,6 +122,10 @@ while running:
         draw_grid()
         tetromino.move_down()
         tetromino.draw()
+    current_time=pygame.time.get_ticks()
+    if current_time-last_rotation_time>10000:
+        rotate_grid()
+        last_rotation_time=current_time
     for event in pygame.event.get():
         if event.type==pygame.QUIT:
             running=False
