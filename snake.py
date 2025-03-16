@@ -3,7 +3,7 @@ import math
 import random
 import time
 pygame.init()
-pygame.display.set_caption("Snake Game")
+pygame.display.set_caption("Snake")
 pygame.event.set_grab(True)
 WIDTH,HEIGHT=600,400
 size=20
