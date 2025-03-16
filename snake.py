@@ -1,19 +1,24 @@
 import pygame
 import math
 import random
+import time
 pygame.init()
+pygame.display.set_caption("Snake Game")
 pygame.event.set_grab(True)
 WIDTH,HEIGHT=600,400
 size=20
 screen=pygame.display.set_mode((WIDTH,HEIGHT))
 clock=pygame.time.Clock()
 frame_count=0
-move_delay=3
+score=0
+move_delay=max(1,int(5-math.log1p(score)/2))
+last_eat_time=time.time()
+shrink_interval=5
+shrink_enabled=False
 font=pygame.font.Font(None,36)
 snake_body=[(300,200),(280,200),(260,200)]
 direction="RIGHT"
 change_to=direction
-score=0
 food_x=random.randint(0,(WIDTH-size)//size)*size
 food_y=random.randint(0,(HEIGHT-size)//size)*size
 GREEN=(0,255,0)
@@ -50,7 +55,7 @@ def draw_snake(screen,snake_body,direction,frame_count):
 def draw_food():
     pygame.draw.circle(screen,YELLOW,(food_x+size//2,food_y+size//2),size//2)
 def move_snake():
-    global snake_body,direction,change_to,food_x,food_y,score
+    global snake_body,direction,change_to,food_x,food_y,score,move_delay,last_eat_time,shrink_enabled
     if change_to=="UP" and direction!="DOWN":
         direction="UP"
     if change_to=="DOWN" and direction!="UP":
@@ -78,11 +83,15 @@ def move_snake():
         head_y=0
     new_head=(head_x,head_y)
     if new_head in snake_body:
-        reset_game()
+        game_over_screen()
         return
     snake_body.insert(0,new_head)
     if new_head==(food_x,food_y):
         score+=10
+        move_delay=max(1,int(5-score/50))
+        last_eat_time=time.time()
+        if score>=100:
+            shrink_enabled=True
         food_x=random.randint(0,(WIDTH-size)//size)*size
         food_y=random.randint(0,(HEIGHT-size)//size)*size
     else:
@@ -98,6 +107,24 @@ def reset_game():
 def draw_score():
     score_text=font.render(f"Score: {score}",True,WHITE)
     screen.blit(score_text,(10,10))
+def game_over_screen():
+    game_over_text=font.render("Game Over!",True,RED)
+    restart_text=font.render("Press any key to restart",True,WHITE)
+    screen.fill((0,0,0))
+    game_over_rect=game_over_text.get_rect(center=(WIDTH//2,HEIGHT//2-20))
+    restart_rect=restart_text.get_rect(center=(WIDTH//2,HEIGHT//2+20))
+    screen.blit(game_over_text,game_over_rect)
+    screen.blit(restart_text,restart_rect)
+    pygame.display.flip()
+    waiting=True
+    while waiting:
+        for event in pygame.event.get():
+            if event.type==pygame.KEYDOWN:
+                waiting=False
+            elif event.type==pygame.QUIT:
+                pygame.quit()
+                exit()
+    reset_game()
 running=True
 while running:
     screen.fill((30,30,30))
@@ -116,9 +143,14 @@ while running:
                 change_to="RIGHT"
     if frame_count%move_delay==0:
         move_snake()
+    if shrink_enabled and time.time()-last_eat_time>shrink_interval and len(snake_body)>2:
+        snake_body.pop()
+        last_eat_time=time.time()
+    if len(snake_body)<=2:
+        game_over_screen()
     draw_snake(screen,snake_body,direction,frame_count)
     draw_food()
     draw_score()
-    pygame.display.update()
+    pygame.display.flip()
     clock.tick(30)
 pygame.quit()
